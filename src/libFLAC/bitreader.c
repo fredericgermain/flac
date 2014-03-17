@@ -512,7 +512,7 @@ FLAC__bool FLAC__bitreader_skip_bits_no_crc(FLAC__BitReader *br, unsigned bits)
 	return true;
 }
 
-FLAC__bool FLAC__bitreader_skip_byte_block_aligned_no_crc(FLAC__BitReader *br, unsigned nvals)
+unsigned FLAC__bitreader_skip_byte_block_aligned_no_crc(FLAC__BitReader *br, unsigned nvals)
 {
 	FLAC__uint32 x;
 
@@ -523,28 +523,28 @@ FLAC__bool FLAC__bitreader_skip_byte_block_aligned_no_crc(FLAC__BitReader *br, u
 	/* step 1: skip over partial head word to get word aligned */
 	while(nvals && br->consumed_bits) { /* i.e. run until we read 'nvals' bytes or we hit the end of the head word */
 		if(!FLAC__bitreader_read_raw_uint32(br, &x, 8))
-			return false;
+			return nvals;
 		nvals--;
 	}
 	if(0 == nvals)
-		return true;
+		return nvals;
 	/* step 2: skip whole words in chunks */
 	while(nvals >= FLAC__BYTES_PER_WORD) {
 		if(br->consumed_words < br->words) {
 			br->consumed_words++;
 			nvals -= FLAC__BYTES_PER_WORD;
 		}
-		else if(!bitreader_read_from_client_(br))
-			return false;
+		else if(!bitreader_read_from_client_(br) ||  br->words == 0)
+			return nvals;
 	}
 	/* step 3: skip any remainder from partial tail bytes */
 	while(nvals) {
 		if(!FLAC__bitreader_read_raw_uint32(br, &x, 8))
-			return false;
+			return nvals;
 		nvals--;
 	}
 
-	return true;
+	return nvals;
 }
 
 FLAC__bool FLAC__bitreader_read_byte_block_aligned_no_crc(FLAC__BitReader *br, FLAC__byte *val, unsigned nvals)

@@ -148,6 +148,7 @@ typedef struct FLAC__StreamDecoderPrivate {
 	void *client_data;
 	FILE *file; /* only used if FLAC__stream_decoder_init_file()/FLAC__stream_decoder_init_file() called, else NULL */
 	FLAC__BitReader *input;
+	unsigned input_to_skip;
 	FLAC__int32 *output[FLAC__MAX_CHANNELS];
 	FLAC__int32 *residual[FLAC__MAX_CHANNELS]; /* WATCHOUT: these are the aligned pointers; the real pointers that should be free()'d are residual_unaligned[] below */
 	FLAC__EntropyCodingMethod_PartitionedRiceContents partitioned_rice_contents[FLAC__MAX_CHANNELS];
@@ -1032,6 +1033,17 @@ FLAC_API FLAC__bool FLAC__stream_decoder_process_single(FLAC__StreamDecoder *dec
 	FLAC__bool got_a_frame;
 	FLAC__ASSERT(0 != decoder);
 	FLAC__ASSERT(0 != decoder->protected_);
+	
+	if (decoder->private_->input_to_skip) {
+		unsigned real_length_skip_remaining;
+		
+		real_length_skip_remaining = FLAC__bitreader_skip_byte_block_aligned_no_crc(decoder->private_->input, decoder->private_->input_to_skip);
+		
+		decoder->private_->input_to_skip = real_length_skip_remaining;
+		
+		if (decoder->private_->input_to_skip)
+			return false;
+	}
 
 	while(1) {
 		switch(decoder->protected_->state) {
@@ -1476,15 +1488,17 @@ FLAC__bool read_metadata_(FLAC__StreamDecoder *decoder)
 		}
 
 		if(skip_it) {
-			if(!FLAC__bitreader_skip_byte_block_aligned_no_crc(decoder->private_->input, real_length))
+			decoder->private_->input_to_skip = FLAC__bitreader_skip_byte_block_aligned_no_crc(decoder->private_->input, real_length);
+			
+			if(decoder->private_->input_to_skip) {
 				return false; /* read_callback_ sets the state for us */
+			}
 		}
 		else {
 			switch(type) {
 				case FLAC__METADATA_TYPE_PADDING:
 					/* skip the padding bytes */
-					if(!FLAC__bitreader_skip_byte_block_aligned_no_crc(decoder->private_->input, real_length))
-						return false; /* read_callback_ sets the state for us */
+					decoder->private_->input_to_skip = FLAC__bitreader_skip_byte_block_aligned_no_crc(decoder->private_->input, real_length);
 					break;
 				case FLAC__METADATA_TYPE_APPLICATION:
 					/* remember, we read the ID already */
@@ -1651,8 +1665,8 @@ FLAC__bool read_metadata_streaminfo_(FLAC__StreamDecoder *decoder, FLAC__bool is
 	/* skip the rest of the block */
 	FLAC__ASSERT(used_bits % 8 == 0);
 	length -= (used_bits / 8);
-	if(!FLAC__bitreader_skip_byte_block_aligned_no_crc(decoder->private_->input, length))
-		return false; /* read_callback_ sets the state for us */
+	
+	decoder->private_->input_to_skip = FLAC__bitreader_skip_byte_block_aligned_no_crc(decoder->private_->input, length);
 
 	return true;
 }
@@ -1692,8 +1706,7 @@ FLAC__bool read_metadata_seektable_(FLAC__StreamDecoder *decoder, FLAC__bool is_
 	/* if there is a partial point left, skip over it */
 	if(length > 0) {
 		/*@@@ do a send_error_to_client_() here?  there's an argument for either way */
-		if(!FLAC__bitreader_skip_byte_block_aligned_no_crc(decoder->private_->input, length))
-			return false; /* read_callback_ sets the state for us */
+		decoder->private_->input_to_skip = FLAC__bitreader_skip_byte_block_aligned_no_crc(decoder->private_->input, length);
 	}
 
 	return true;
@@ -1924,8 +1937,8 @@ FLAC__bool skip_id3v2_tag_(FLAC__StreamDecoder *decoder)
 		skip |= (x & 0x7f);
 	}
 	/* skip the rest of the tag */
-	if(!FLAC__bitreader_skip_byte_block_aligned_no_crc(decoder->private_->input, skip))
-		return false; /* read_callback_ sets the state for us */
+	decoder->private_->input_to_skip = FLAC__bitreader_skip_byte_block_aligned_no_crc(decoder->private_->input, skip);
+	
 	return true;
 }
 
