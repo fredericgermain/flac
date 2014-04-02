@@ -137,13 +137,13 @@ typedef struct FLAC__StreamDecoderPrivate {
 	FLAC__StreamDecoderMetadataCallback metadata_callback;
 	FLAC__StreamDecoderErrorCallback error_callback;
 	/* generic 32-bit datapath: */
-	void (*local_lpc_restore_signal)(const FLAC__int32 residual[], unsigned data_len, const FLAC__int32 qlp_coeff[], unsigned order, int lp_quantization, FLAC__int32 data[]);
+	void (*local_lpc_restore_signal)(const FLAC__int32 * flac_restrict residual, unsigned data_len, const FLAC__int32 * flac_restrict qlp_coeff, unsigned order, int lp_quantization, FLAC__int32 * flac_restrict data);
 	/* generic 64-bit datapath: */
-	void (*local_lpc_restore_signal_64bit)(const FLAC__int32 residual[], unsigned data_len, const FLAC__int32 qlp_coeff[], unsigned order, int lp_quantization, FLAC__int32 data[]);
+	void (*local_lpc_restore_signal_64bit)(const FLAC__int32 * flac_restrict residual, unsigned data_len, const FLAC__int32 * flac_restrict qlp_coeff, unsigned order, int lp_quantization, FLAC__int32 * flac_restrict data);
 	/* for use when the signal is <= 16 bits-per-sample, or <= 15 bits-per-sample on a side channel (which requires 1 extra bit): */
-	void (*local_lpc_restore_signal_16bit)(const FLAC__int32 residual[], unsigned data_len, const FLAC__int32 qlp_coeff[], unsigned order, int lp_quantization, FLAC__int32 data[]);
+	void (*local_lpc_restore_signal_16bit)(const FLAC__int32 * flac_restrict residual, unsigned data_len, const FLAC__int32 * flac_restrict qlp_coeff, unsigned order, int lp_quantization, FLAC__int32 * flac_restrict data);
 	/* for use when the signal is <= 16 bits-per-sample, or <= 15 bits-per-sample on a side channel (which requires 1 extra bit), AND order <= 8: */
-	void (*local_lpc_restore_signal_16bit_order8)(const FLAC__int32 residual[], unsigned data_len, const FLAC__int32 qlp_coeff[], unsigned order, int lp_quantization, FLAC__int32 data[]);
+	void (*local_lpc_restore_signal_16bit_order8)(const FLAC__int32 * flac_restrict residual, unsigned data_len, const FLAC__int32 * flac_restrict qlp_coeff, unsigned order, int lp_quantization, FLAC__int32 * flac_restrict data);
 	FLAC__bool (*local_bitreader_read_rice_signed_block)(FLAC__BitReader *br, int vals[], unsigned nvals, unsigned parameter);
 	void *client_data;
 	FILE *file; /* only used if FLAC__stream_decoder_init_file()/FLAC__stream_decoder_init_file() called, else NULL */
