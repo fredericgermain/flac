@@ -45,7 +45,6 @@
 #if defined DEBUG || defined FLAC__OVERFLOW_DETECT || defined FLAC__OVERFLOW_DETECT_VERBOSE
 #include <stdio.h>
 #endif
-#include <inttypes.h>
 
 /* OPT: #undef'ing this may improve the speed on some architectures */
 #define FLAC__LPC_UNROLLED_FILTER_LOOPS
